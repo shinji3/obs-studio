@@ -1601,15 +1601,18 @@ AdvancedOutput::AdvancedOutput(OBSBasic *main_) : BasicOutputHandler(main_)
 			throw "Failed to create recording output "
 			      "(advanced output)";
 
-		if (!useStreamEncoder) {
+		if (useStreamEncoder)
+			videoRecording = obs_video_encoder_create(
+				streamEncoder, "advanced_video_recording",
+				streamEncSettings, nullptr);
+		else
 			videoRecording = obs_video_encoder_create(
 				recordEncoder, "advanced_video_recording",
 				recordEncSettings, nullptr);
-			if (!videoRecording)
-				throw "Failed to create recording video "
-				      "encoder (advanced output)";
-			obs_encoder_release(videoRecording);
-		}
+		if (!videoRecording)
+			throw "Failed to create recording video "
+			      "encoder (advanced output)";
+		obs_encoder_release(videoRecording);
 	}
 
 	videoStreaming = obs_video_encoder_create(streamEncoder,
@@ -1810,10 +1813,10 @@ inline void AdvancedOutput::SetupRecording()
 		tracks = config_get_int(main->Config(), "AdvOut", "TrackIndex");
 
 	if (useStreamEncoder) {
-		obs_output_set_video_encoder(fileOutput, videoStreaming);
+		obs_output_set_video_encoder(fileOutput, videoRecording);
 		if (replayBuffer)
 			obs_output_set_video_encoder(replayBuffer,
-						     videoStreaming);
+						     videoRecording);
 	} else {
 		if (rescale && rescaleRes && *rescaleRes) {
 			if (sscanf(rescaleRes, "%ux%u", &cx, &cy) != 2) {
